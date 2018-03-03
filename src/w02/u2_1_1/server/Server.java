@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import log.Log;
+import util.Throttler;
 import w02.u2_1_1.communication.Connection;
 
 public class Server {
@@ -55,6 +56,7 @@ public class Server {
 	}
 	
 	public void shutdown() {
+		log.debug("Shutting down");
 		log.stop();
 	}
 	
@@ -75,8 +77,6 @@ public class Server {
 		log.info("Starting server at " + listeningSocket.getInetAddress() + ":" + listeningSocket.getLocalPort());
 		running = true;
 		run();
-		log.debug("Shutting down");
-		shutdown();
 		return true;
 	}
 	
@@ -85,11 +85,7 @@ public class Server {
 		while(running) {
 			Socket newSocket = null;
 			try {
-				// Lets not use 100% cpu
-				long timeDiff = System.currentTimeMillis() - lastRun;
-				if (timeDiff < DEFAULT_INTERVAL)
-					Thread.sleep(DEFAULT_INTERVAL - timeDiff);
-				lastRun = System.currentTimeMillis();
+				lastRun = Throttler.waitIfNecessary(lastRun, DEFAULT_INTERVAL);
 				
 				log.debug("Listening on: " + listeningSocket.getInetAddress() + ":" + listeningSocket.getLocalPort());
 				newSocket = listeningSocket.accept();
@@ -100,7 +96,7 @@ public class Server {
 			}
 			if (newSocket != null) {
 				log.debug("New connection: " + newSocket.getInetAddress() + ":" + newSocket.getPort());
-				Connection conn = new Connection(newSocket);
+				Connection conn = new Connection(newSocket, this);
 				log.debug("Starting new Thread for connection");
 				new Thread(conn).start();
 				connections.add(conn);		
@@ -121,5 +117,6 @@ public class Server {
 		
 		server.initialize();
 		server.start();
+		server.shutdown();
 	}
 }

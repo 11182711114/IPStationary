@@ -1,6 +1,8 @@
 package w02.u2_1_1.communication;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -12,6 +14,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import log.Log;
+import util.Throttler;
 import w02.u2_1_1.server.Server;
 
 public class Connection implements Runnable {
@@ -21,7 +24,7 @@ public class Connection implements Runnable {
 
 	private ClientInfo client;
 	private Socket socket;
-	Server server;
+	private Server server;
 
 	private Queue<String> in;
 	private BlockingQueue<String> out;
@@ -30,8 +33,9 @@ public class Connection implements Runnable {
 
 	private Log log;
 
-	public Connection(Socket socket) {
+	public Connection(Socket socket, Server server) {
 		this.socket = socket;
+		this.server = server;
 		this.in = new LinkedList<String>();
 		this.out = new LinkedBlockingQueue<String>(1024);
 		this.client = ClientInfo.create(socket.getInetAddress(), socket.getPort());
@@ -57,15 +61,11 @@ public class Connection implements Runnable {
 		running = true;
 		long lastRun = System.currentTimeMillis();
 		while(running) {
-			// Lets not use 100% cpu
-			long timeDiff = System.currentTimeMillis() - lastRun;
-			if (timeDiff < DEFAULT_INTERVAL)
-				try {
-					Thread.sleep(DEFAULT_INTERVAL - timeDiff);
-				} catch (InterruptedException e) {
-					log.exception(e);
-				}
-			lastRun = System.currentTimeMillis();
+			try {
+				lastRun = Throttler.waitIfNecessary(lastRun, DEFAULT_INTERVAL);
+			} catch (InterruptedException e) {
+				log.exception(e);
+			}
 			if (socket.isClosed()) {
 				running = false;
 				return;
@@ -77,52 +77,73 @@ public class Connection implements Runnable {
 	}
 	
 	private void flushIn() {
-		for (String sendToRest = in.poll(); !in.isEmpty(); in.poll()) {
-			sendToRest(sendToRest);
+		while (!in.isEmpty()) {
+			sendToRest(in.poll());
 		}
+//		for (String sendToRest = in.poll(); !in.isEmpty(); in.poll()) {
+//			sendToRest(sendToRest);
+//		}
 	}
 
 	private void write() {
-		PrintWriter pw = null;
+		DataOutputStream pw = null;
 		try {
-			pw = new PrintWriter(socket.getOutputStream());
+			pw = new DataOutputStream(socket.getOutputStream());
+			while (!out.isEmpty()) {
+				pw.writeUTF(out.poll());
+			}
 		} catch (IOException e) {
 			log.error("Error getting OutputStream from socket\n" + e.getMessage());
-		}
-		if (pw != null) {
-			while (!out.isEmpty()) {
-				pw.write(out.poll());
-			}
 		}
 	}
 	
 	private void read() {
-		BufferedReader reader = null;
+		DataInputStream reader = null;
 		try {
-			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+//			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			reader = new DataInputStream(socket.getInputStream());
 		} catch (IOException e) {
 			log.error("Error getting InputStream from socket\n" + e.getMessage());
 		}
 
 		if (reader != null) {
 			try {
-				while (reader.ready()) {
+//				while (reader.available() > 0) {
 
-					StringBuilder sb = new StringBuilder();
-					for (String s = reader.readLine(); reader.ready(); reader.readLine()) {
-						log.trace("Read: " + s);
-						if (s != DELIMITER) {
-							log.trace("Adding "+ s + " to sequence");
-							sb.append(s);
-						} else {
-							log.trace(s + " is delimiter, breaking current sequence");
-							break;
-						}
-					}
-					log.trace("Adding sequence " + sb.toString() + " to in");
-					in.offer(sb.toString());
-					out.offer(sb.toString());
+//					StringBuilder sequence = new StringBuilder();
+				while(reader.available() > 0) {
+					String line = reader.readUTF();
+					in.offer(socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + "::" + line);
+//					out.offer(socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + "::" + line);
 				}
+//					for (String token = reader.readUTF(); true; token = reader.readUTF()) {
+//						reader.readUTF();
+//						in.offer(token);
+//						out.offer(token);
+//					}
+					
+//					boolean sequenceDone = false;
+//					while (!sequenceDone) {
+//						StringBuilder sb = new StringBuilder();
+//						for (int i = reader.read(); true; i = reader.read()) {
+//							char c = (char) i;
+//							if (i == -1) {
+//								sequenceDone = true;
+//								break;
+//							}
+//							if (c == ' ')
+//								break;
+//								
+//							log.trace("Read: " + c);
+//							log.trace("Adding "+ c + " to token");
+//							sb.append(c);
+//						}
+//						log.trace("Adding token " + sb.toString() + " to sequence");
+//						sequence.append(sb.toString());
+//					}
+//					in.offer(sequence.toString());
+//					out.offer(sequence.toString());
+//				}
 			} catch (IOException e) {
 				log.exception(e);
 			}

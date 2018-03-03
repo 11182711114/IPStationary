@@ -1,6 +1,8 @@
 package w02.u2_1_1.client;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -8,9 +10,11 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.Queue;
 import log.Log;
+import util.Throttler;
 
 public class Client {
 	private static final int DEFAULT_INTERVAL = 1000 / 10;
@@ -48,6 +52,7 @@ public class Client {
 		this.port = port;
 		
 		this.consoleInput = new LinkedList<String>();
+		this.socketInput = new LinkedList<String>();
 	}
 	public Client(String host) {
 		this(host, DEFAULT_PORT);
@@ -59,17 +64,27 @@ public class Client {
 	public boolean initialize() {
 		Log.startLog(logFile, logAppend);
 		log = Log.getLogger(this.getClass().getSimpleName());
+		
+		socket = connect(serverHost, serverPort, host, port);
+		if (socket == null)
+			return false;
+	
+		return true;
+	}
+	
+	private Socket connect(String serverHost, int serverPort, String host, int port) {
+		Socket socket = null ;
 		try {
 			socket = new Socket(serverHost, serverPort, InetAddress.getByName(host), port);
+			System.out.println("Connected to server: " + serverHost + ":" + serverPort + " from local " + host + ":" + port);
 //			socket.bind(new InetSocketAddress(host, port));
 		} catch (IOException e) {
 			log.exception(e);
 			log.error("Failed to create Socket with remote: " + serverHost + ":" + serverPort + " local: "+ host + ":" + port);
 			log.stop();
 			System.out.println("Could not connect to server, shutting down");
-			return false;
 		}
-		return true;
+		return socket;
 	}
 	
 	public void start() {
@@ -80,18 +95,16 @@ public class Client {
 	
 	public void run() {
 		try ( 
-			PrintWriter outSocket = new PrintWriter(socket.getOutputStream());
-			BufferedReader inSocket = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			PrintWriter outConsole = new PrintWriter(System.out);
+//			PrintWriter outSocket = new PrintWriter(socket.getOutputStream(), true);
+//			BufferedReader inSocket = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			DataInputStream inSocket = new DataInputStream(socket.getInputStream());
+			DataOutputStream outSocket = new DataOutputStream(socket.getOutputStream());
+			PrintWriter outConsole = new PrintWriter(System.out, true);
 			BufferedReader inConsole = new BufferedReader(new InputStreamReader(System.in));
 		) {
 			long lastRun = System.currentTimeMillis();
 			while(running) {
-				// Lets not use 100% cpu
-				long timeDiff = System.currentTimeMillis() - lastRun;
-				if (timeDiff < DEFAULT_INTERVAL)
-					Thread.sleep(DEFAULT_INTERVAL - timeDiff);
-				lastRun = System.currentTimeMillis();
+				lastRun = Throttler.waitIfNecessary(lastRun, DEFAULT_INTERVAL);
 				
 				if (socket.isClosed())
 					return;
@@ -116,23 +129,24 @@ public class Client {
 		}
 	}
 	
-	private void readFromServer(BufferedReader inSocket) {
+	private void readFromServer(DataInputStream inSocket) {
 		try {
-			while(inSocket.ready()) {
-				StringBuilder sb = new StringBuilder();
-				for (String token = inSocket.readLine(); token != "<END>"; token = inSocket.readLine()) {
-					inSocket.readLine();
-					sb.append(token);
-				}
-				inSocket.read(); // Read the <END> token
-				socketInput.add(sb.toString());
+			while(inSocket.available() > 0) {
+				socketInput.add(inSocket.readUTF());
+				
+//				StringBuilder sb = new StringBuilder();
+//				for (String token = inSocket.readUTF(); inSocket.available() > 0; token = inSocket.readUTF()) {
+//					inSocket.readUTF();
+//					sb.append(token);
+//				}
+//				socketInput.add(sb.toString());
 			}
 		} catch (IOException e) {
 			log.exception(e);
 		}
 	}
 	
-	private void sendToSever(PrintWriter outSocket) {
+	private void sendToSever(DataOutputStream outSocket) {
 		log.trace("Checking if input is empty");
 		
 		if (outSocket == null) {
@@ -144,9 +158,11 @@ public class Client {
 			log.debug("Sending to server");
 			
 			String line = consoleInput.poll();
-			outSocket.println(line + " <END>");
-			
-			
+			try {
+				outSocket.writeUTF(line);
+			} catch (IOException e) {
+				log.exception(e);
+			}			
 		}
 	}
 	
