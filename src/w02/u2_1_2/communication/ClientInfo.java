@@ -21,7 +21,7 @@ public class ClientInfo {
 	}
 	
 	public String toString() {
-		return ip.toString() + ":" + port;
+		return ip.getHostAddress() + ":" + port;
 	}
 	
 	

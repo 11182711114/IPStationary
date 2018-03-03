@@ -13,6 +13,8 @@ import java.util.LinkedList;
 import java.util.Queue;
 import log.Log;
 import util.Throttler;
+import w02.u2_1_2.communication.IO.SocketReader;
+import w02.u2_1_2.communication.IO.SocketWriter;
 
 public class Client {
 	private static final int DEFAULT_INTERVAL = 1000 / 10;
@@ -34,6 +36,10 @@ public class Client {
 	private int serverPort = DEFAULT_SERVER_PORT;
 	
 	private Socket socket;
+	private SocketReader<String> reader;
+	private SocketWriter<String> writer;
+	private Thread readerThread;
+	private Thread writerThread;
 	
 	
 	private File logFile = new File(DEFAULT_LOG_FILE);
@@ -41,7 +47,6 @@ public class Client {
 	private Log log;
 	
 	private Queue<String> consoleInput;
-	private Queue<String> socketInput;
 	
 	private boolean running;
 	
@@ -50,7 +55,6 @@ public class Client {
 		this.port = port;
 		
 		this.consoleInput = new LinkedList<String>();
-		this.socketInput = new LinkedList<String>();
 	}
 	public Client(String host) {
 		this(host, DEFAULT_PORT);
@@ -86,16 +90,33 @@ public class Client {
 	
 	public void start() {
 		log.info("Starting client: " + host + ":" + port);
+		try {
+			reader = new SocketReader<String>(socket.getInputStream());
+			writer = new SocketWriter<String>(socket.getOutputStream());
+			log.debug("Starting reader thread");
+			readerThread = new Thread(reader);
+			log.debug("Starting writer thread");
+			writerThread = new Thread(writer);
+			readerThread.start();
+			writerThread.start();
+		} catch (IOException e) {
+			log.exception(e);
+		}
 		running = true;
 		run();
+		stop();
 	}
+	
+	public void stop() {
+		writer.stop();
+		reader.stop();
+		writerThread.interrupt();
+		readerThread.interrupt();
+	}
+	
 	
 	public void run() {
 		try ( 
-//			PrintWriter outSocket = new PrintWriter(socket.getOutputStream(), true);
-//			BufferedReader inSocket = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			DataInputStream inSocket = new DataInputStream(socket.getInputStream());
-			DataOutputStream outSocket = new DataOutputStream(socket.getOutputStream());
 			PrintWriter outConsole = new PrintWriter(System.out, true);
 			BufferedReader inConsole = new BufferedReader(new InputStreamReader(System.in));
 		) {
@@ -106,9 +127,8 @@ public class Client {
 				if (socket.isClosed())
 					running = false;
 				
-				readFromServer(inSocket);
 				readFromConsole(inConsole);
-				sendToSever(outSocket);
+				sendToSever();
 				printFromServer(outConsole);
 			}
 		} catch (IOException e) {
@@ -120,43 +140,21 @@ public class Client {
 	}
 	
 	private void printFromServer(PrintWriter outConsole) {
-		while(!socketInput.isEmpty()) {
-			String line = socketInput.poll();
+		while(reader.available()) {
+			String line = reader.poll();
 			outConsole.println(line);
 		}
 	}
 	
-	private void readFromServer(DataInputStream inSocket) {
-		try {
-			while(inSocket.available() > 0) {
-				socketInput.add(inSocket.readUTF());
-			}
-		} catch (IOException e) {
-			log.exception(e);
-		}
-	}
-	
-	private void sendToSever(DataOutputStream outSocket) {		
-		if (outSocket == null) {
-			log.trace("PrintWriter outSocket is null");
-			return;
-		}
-		
+	private void sendToSever() {		
 		while(!consoleInput.isEmpty()) {
-			log.debug("Sending to server");
-			
-			String line = consoleInput.poll();
-			try {
-				outSocket.writeUTF(line);
-			} catch (IOException e) {
-				log.exception(e);
-			}			
+			writer.add(consoleInput.poll());
 		}
 	}
 	
 	public void readFromConsole(BufferedReader inConsole) {
 		try {
-			log.trace("Checking if console is ready for reading: " + inConsole.ready());
+//			log.trace("Checking if console is ready for reading: " + inConsole.ready());
 			while(inConsole.ready()) {
 				String in = inConsole.readLine();
 				log.trace("Reading from console: " + in);
@@ -178,7 +176,7 @@ public class Client {
 		
 		if (client.initialize())
 			client.start();
-		
+	
 		
 	}
 	
