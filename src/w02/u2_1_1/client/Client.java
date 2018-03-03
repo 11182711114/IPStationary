@@ -77,7 +77,6 @@ public class Client {
 		try {
 			socket = new Socket(serverHost, serverPort, InetAddress.getByName(host), port);
 			System.out.println("Connected to server: " + serverHost + ":" + serverPort + " from local " + host + ":" + port);
-//			socket.bind(new InetSocketAddress(host, port));
 		} catch (IOException e) {
 			log.exception(e);
 			log.error("Failed to create Socket with remote: " + serverHost + ":" + serverPort + " local: "+ host + ":" + port);
@@ -133,13 +132,6 @@ public class Client {
 		try {
 			while(inSocket.available() > 0) {
 				socketInput.add(inSocket.readUTF());
-				
-//				StringBuilder sb = new StringBuilder();
-//				for (String token = inSocket.readUTF(); inSocket.available() > 0; token = inSocket.readUTF()) {
-//					inSocket.readUTF();
-//					sb.append(token);
-//				}
-//				socketInput.add(sb.toString());
 			}
 		} catch (IOException e) {
 			log.exception(e);

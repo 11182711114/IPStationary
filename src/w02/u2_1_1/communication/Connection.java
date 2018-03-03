@@ -80,9 +80,6 @@ public class Connection implements Runnable {
 		while (!in.isEmpty()) {
 			sendToRest(in.poll());
 		}
-//		for (String sendToRest = in.poll(); !in.isEmpty(); in.poll()) {
-//			sendToRest(sendToRest);
-//		}
 	}
 
 	private void write() {
@@ -108,42 +105,11 @@ public class Connection implements Runnable {
 
 		if (reader != null) {
 			try {
-//				while (reader.available() > 0) {
-
-//					StringBuilder sequence = new StringBuilder();
 				while(reader.available() > 0) {
 					String line = reader.readUTF();
 					in.offer(socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + "::" + line);
 //					out.offer(socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + "::" + line);
 				}
-//					for (String token = reader.readUTF(); true; token = reader.readUTF()) {
-//						reader.readUTF();
-//						in.offer(token);
-//						out.offer(token);
-//					}
-					
-//					boolean sequenceDone = false;
-//					while (!sequenceDone) {
-//						StringBuilder sb = new StringBuilder();
-//						for (int i = reader.read(); true; i = reader.read()) {
-//							char c = (char) i;
-//							if (i == -1) {
-//								sequenceDone = true;
-//								break;
-//							}
-//							if (c == ' ')
-//								break;
-//								
-//							log.trace("Read: " + c);
-//							log.trace("Adding "+ c + " to token");
-//							sb.append(c);
-//						}
-//						log.trace("Adding token " + sb.toString() + " to sequence");
-//						sequence.append(sb.toString());
-//					}
-//					in.offer(sequence.toString());
-//					out.offer(sequence.toString());
-//				}
 			} catch (IOException e) {
 				log.exception(e);
 			}
