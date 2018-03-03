@@ -104,7 +104,7 @@ public class Client {
 				lastRun = Throttler.waitIfNecessary(lastRun, DEFAULT_INTERVAL);
 				
 				if (socket.isClosed())
-					return;
+					running = false;
 				
 				readFromServer(inSocket);
 				readFromConsole(inConsole);
@@ -136,9 +136,7 @@ public class Client {
 		}
 	}
 	
-	private void sendToSever(DataOutputStream outSocket) {
-		log.trace("Checking if input is empty");
-		
+	private void sendToSever(DataOutputStream outSocket) {		
 		if (outSocket == null) {
 			log.trace("PrintWriter outSocket is null");
 			return;

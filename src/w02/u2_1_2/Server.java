@@ -1,4 +1,4 @@
-package w02.u2_1_1.server;
+package w02.u2_1_2;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,7 +10,7 @@ import java.util.List;
 
 import log.Log;
 import util.Throttler;
-import w02.u2_1_1.communication.Connection;
+import w02.u2_1_2.communication.Connection;
 
 public class Server {
 	private static final int DEFAULT_INTERVAL = 1000 / 10;

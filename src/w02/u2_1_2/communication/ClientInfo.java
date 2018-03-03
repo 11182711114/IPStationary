@@ -1,4 +1,4 @@
-package w02.u2_1_1.communication;
+package w02.u2_1_2.communication;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

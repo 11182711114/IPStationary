@@ -1,4 +1,4 @@
-package w02.u2_1_1.communication;
+package w02.u2_1_2.communication;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -12,7 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import log.Log;
 import util.Throttler;
-import w02.u2_1_1.server.Server;
+import w02.u2_1_2.Server;
 
 public class Connection implements Runnable {
 	private static final int DEFAULT_INTERVAL = 1000 / 10;
