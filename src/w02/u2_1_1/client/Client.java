@@ -1,8 +1,6 @@
 package w02.u2_1_1.client;
 
 import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -154,7 +152,6 @@ public class Client {
 	
 	public void readFromConsole(BufferedReader inConsole) {
 		try {
-//			log.trace("Checking if console is ready for reading: " + inConsole.ready());
 			while(inConsole.ready()) {
 				String in = inConsole.readLine();
 				log.trace("Reading from console: " + in);

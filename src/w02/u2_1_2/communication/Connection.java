@@ -32,7 +32,6 @@ public class Connection implements Runnable {
 		this.socket = socket;
 		this.server = server;
 		this.out = new LinkedList<String>();
-//		this.out = new LinkedBlockingQueue<String>(1024);
 		this.client = ClientInfo.create(socket.getInetAddress(), socket.getPort());
 		this.log = Log.getLogger(this.getClass().getSimpleName() + ":" + client.toString());
 	}
@@ -80,8 +79,7 @@ public class Connection implements Runnable {
 				running = false;
 				return;
 			}
-//			read();
-			readReader();			
+			read();			
 			write();
 		}
 		reader.stop();
@@ -90,53 +88,15 @@ public class Connection implements Runnable {
 		writerThread.interrupt();
 	}
 	
-	private void readReader() {
-		while (reader.available()) {
+	private void read() {
+		while (reader.available())
 			sendToRest(client + ": " + reader.poll());
-		}
+		
 	}
 
 	private void write() {
-		
 		while(!out.isEmpty())
 			writer.add(out.poll());
-		
-//		DataOutputStream pw = null;
-//		try {
-//			pw = new DataOutputStream(socket.getOutputStream());
-//			while (!out.isEmpty()) {
-//				pw.writeUTF(out.poll());
-//			}
-//		} catch (IOException e) {
-//			log.error("Error getting OutputStream from socket\n" + e.getMessage());
-//		}
-	}
-	
-	private void read() {
-		
-		while (reader.available())
-			out.add(reader.poll());
-		
-//		DataInputStream reader = null;
-//		try {
-////			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-//			reader = new DataInputStream(socket.getInputStream());
-//		} catch (IOException e) {
-//			log.error("Error getting InputStream from socket\n" + e.getMessage());
-//		}
-//
-//		if (reader != null) {
-//			try {
-//				while(reader.available() > 0) {
-//					String line = reader.readUTF();
-//					in.offer(socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + "::" + line);
-////					out.offer(socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + "::" + line);
-//				}
-//			} catch (IOException e) {
-//				log.exception(e);
-//			}
-//		}
-
 	}
 
 	public void stop() {

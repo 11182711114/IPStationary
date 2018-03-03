@@ -29,7 +29,6 @@ public class SocketWriter<T extends Serializable> implements Runnable {
 	public void run() {
 		log.debug("Writer starting");
 		running = true;
-//		long lastRun = System.currentTimeMillis();
 		ObjectOutputStream writer = null;
 		try {
 			writer = new ObjectOutputStream(output);
@@ -39,7 +38,6 @@ public class SocketWriter<T extends Serializable> implements Runnable {
 		
 		while(running) {
 			try {
-//				lastRun = Throttler.waitIfNecessary(lastRun, DEFAULT_INTERVAL);
 				log.debug("Checking for data to write");
 				T toWrite = outputBuffer.take();
 				log.debug("New data to write");

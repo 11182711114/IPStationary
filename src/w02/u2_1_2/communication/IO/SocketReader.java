@@ -34,7 +34,6 @@ public class SocketReader<T extends Serializable> implements Runnable {
 	public void run() {
 		log.debug("Reader starting");
 		running = true;
-//		long lastRun = System.currentTimeMillis();
 		ObjectInputStream reader = null;
 		try {
 			reader = new ObjectInputStream(input);
@@ -44,14 +43,12 @@ public class SocketReader<T extends Serializable> implements Runnable {
 		
 		while(running) {
 			try {
-//				lastRun = Throttler.waitIfNecessary(lastRun, DEFAULT_INTERVAL)
 				log.trace("Waiting for data to read");
 				Object read = reader.readObject();
 				if (read != null) { // can be null if the thread is interrupted while waiting
 					log.trace("Data to read found");
 					if (read instanceof Serializable) {
 						log.trace("Data is Serializable");
-	//					inputBuffer.offer((T) read); 
 						inputBuffer.put((T) read); //FIXME This is bad? Should be bad
 					}
 				}
