@@ -1,11 +1,8 @@
 package w02.u2_1_1.communication;
 
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,8 +16,6 @@ import w02.u2_1_1.server.Server;
 
 public class Connection implements Runnable {
 	private static final int DEFAULT_INTERVAL = 1000 / 10;
-
-	private static final String DELIMITER = "<END>";
 
 	private ClientInfo client;
 	private Socket socket;
