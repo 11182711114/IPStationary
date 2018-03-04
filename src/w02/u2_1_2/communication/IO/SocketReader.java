@@ -13,6 +13,7 @@ import log.Log;
  *
  * @param <T>
  */
+//TODO: Should this be parameterized for extending Seriablizable or just handling Serializables?
 public class SocketReader<T extends Serializable> implements Runnable {
 //	private static final int DEFAULT_INTERVAL = 1000 / 1000;
 	
