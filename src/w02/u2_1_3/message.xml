@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE message PUBLIC "1//PW//Example//123" "https://people.dsv.su.se/~pierre/courses/05_ass/ip1/2/2.1.3/message.dtd">
+<message>
+  <header>
+    <protocol>
+      <type>CTTP</type>
+      <version>1.0</version>
+      <command>MESS</command>
+    </protocol>
+    <id>
+      <name>Pierre A. I. Wijkman</name>
+      <email>pierre@dsv.su.se</email>
+      <homepage>http://dsv.su.se/~pierrre/</homepage>
+      <host>unknown</host>
+    </id>
+  </header>
+  <body>Hejsan!</body>
+</message>
